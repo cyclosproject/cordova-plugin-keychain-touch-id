@@ -14,8 +14,12 @@
  * limitations under the License
  */
 
-package com.cordova.plugin.android.fingerprintauth;
+package org.cyclos.mobile.plugin;
 
+import org.cyclos.mobile.MainActivity;
+import org.json.JSONException;
+import org.json.JSONObject;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.DialogFragment;
 import android.app.KeyguardManager;
@@ -29,154 +33,65 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import org.apache.cordova.CordovaInterface;
 
 /**
  * A dialog which uses fingerprint APIs to authenticate the user, and falls back to password
  * authentication if fingerprint is not available.
  */
-public class FingerprintAuthenticationDialogFragment extends DialogFragment
-        implements FingerprintUiHelper.Callback {
+@SuppressLint("NewApi")
+public class FingerprintAuthenticationDialogFragment
+    extends DialogFragment
+    implements FingerprintUiHelper.Callback {
+
+    /**
+     * Enumeration to indicate which authentication method the user is trying to authenticate with.
+     */
+    public enum Stage {
+        FINGERPRINT,
+        NEW_FINGERPRINT_ENROLLED,
+        BACKUP
+    }
 
     private static final String TAG = "FingerprintAuthDialog";
+
     private static final int REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS = 1;
 
+    /**
+     * Returns a translated key from shared preference
+     */
+    public static String getKey(String key) {
+        SharedPreferences preferences =
+            MainActivity.get().getSharedPreferences(MobilePlugin.DATA_PREFS, Context.MODE_PRIVATE);
+        String value = preferences.getString("fingerprint_keys", null);
+        try {
+            JSONObject obj = new JSONObject(value);
+            return obj.getString(key);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
     private Button mCancelButton;
+
     private View mFingerprintContent;
 
     private Stage mStage = Stage.FINGERPRINT;
-
     private KeyguardManager mKeyguardManager;
     private FingerprintManager.CryptoObject mCryptoObject;
     private FingerprintUiHelper mFingerprintUiHelper;
     private FingerprintAuthAux mFingerPrintAuth;
+
     FingerprintUiHelper.FingerprintUiHelperBuilder mFingerprintUiHelperBuilder;
 
     public FingerprintAuthenticationDialogFragment() {
     }
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        // Do not create a new Fragment when the Activity is re-created such as orientation changes.
-        setRetainInstance(true);
-        setStyle(DialogFragment.STYLE_NORMAL, android.R.style.Theme_Material_Light_Dialog);
-
-        mKeyguardManager = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
-        mFingerprintUiHelperBuilder = new FingerprintUiHelper.FingerprintUiHelperBuilder(
-                getContext(), getContext().getSystemService(FingerprintManager.class));
-
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        Bundle args = getArguments();
-        int dialogMode = args.getInt("dialogMode");
-        String message = args.getString("dialogMessage");
-        Log.d(TAG, "dialogMode: " + dialogMode);
-
-        int fingerprint_auth_dialog_title_id = getResources()
-                .getIdentifier("fingerprint_auth_dialog_title", "string",
-                        FingerprintAuth.packageName);
-        getDialog().setTitle(getString(fingerprint_auth_dialog_title_id));
-        int fingerprint_dialog_container_id = getResources()
-                .getIdentifier("fingerprint_dialog_container", "layout",
-                        FingerprintAuth.packageName);
-        View v = inflater.inflate(fingerprint_dialog_container_id, container, false);
-        int cancel_button_id = getResources()
-                .getIdentifier("cancel_button", "id", FingerprintAuth.packageName);
-
-        TextView description =  (TextView) v.findViewById(getResources()
-                .getIdentifier("fingerprint_description", "id", FingerprintAuth.packageName));
-        description.setText(message);
-        mCancelButton = (Button) v.findViewById(cancel_button_id);
-        mCancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                FingerprintAuth.onCancelled();
-                dismissAllowingStateLoss();
-            }
-        });
-
-        int fingerprint_container_id = getResources()
-                .getIdentifier("fingerprint_container", "id", FingerprintAuth.packageName);
-        mFingerprintContent = v.findViewById(fingerprint_container_id);
-
-        int new_fingerprint_enrolled_description_id = getResources()
-                .getIdentifier("new_fingerprint_enrolled_description", "id",
-                        FingerprintAuth.packageName);
-
-        int fingerprint_icon_id = getResources()
-                .getIdentifier("fingerprint_icon", "id", FingerprintAuth.packageName);
-        int fingerprint_status_id = getResources()
-                .getIdentifier("fingerprint_status", "id", FingerprintAuth.packageName);
-        mFingerprintUiHelper = mFingerprintUiHelperBuilder.build(
-                (ImageView) v.findViewById(fingerprint_icon_id),
-                (TextView) v.findViewById(fingerprint_status_id), this);
-        updateStage();
-
-        return v;
-    }
-
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (mStage == Stage.FINGERPRINT) {
-            mFingerprintUiHelper.startListening(mCryptoObject);
-        }
-    }
-
-    public void setStage(Stage stage) {
-        mStage = stage;
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        mFingerprintUiHelper.stopListening();
-    }
-
-    /**
-     * Sets the crypto object to be passed in when authenticating with fingerprint.
-     */
-    public void setCryptoObject(FingerprintManager.CryptoObject cryptoObject) {
-        mCryptoObject = cryptoObject;
-    }
-
-    /**
-     * Switches to backup (password) screen. This either can happen when fingerprint is not
-     * available or the user chooses to use the password authentication method by pressing the
-     * button. This can also happen when the user had too many fingerprint attempts.
-     */
-
-
-    private void updateStage() {
-        int cancel_id = getResources()
-                .getIdentifier("cancel", "string", FingerprintAuth.packageName);
-        switch (mStage) {
-            case FINGERPRINT:
-                mCancelButton.setText(cancel_id);
-                mFingerprintContent.setVisibility(View.VISIBLE);
-                break;
-        }
-    }
-
-    private void showAuthenticationScreen() {
-        // Create the Confirm Credentials screen. You can customize the title and description. Or
-        // we will provide a generic one for you if you leave it null
-        Intent intent = mKeyguardManager.createConfirmDeviceCredentialIntent(null, null);
-        if (intent != null) {
-            startActivityForResult(intent, REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS);
-        }
+    public FingerprintAuthAux getmFingerPrintAuth() {
+        return mFingerPrintAuth;
     }
 
     @Override
@@ -203,30 +118,129 @@ public class FingerprintAuthenticationDialogFragment extends DialogFragment
     }
 
     @Override
-    public void onError() {
-
-    }
-
-    @Override
     public void onCancel(DialogInterface dialog) {
         super.onCancel(dialog);
         FingerprintAuth.onCancelled();
     }
 
-    public FingerprintAuthAux getmFingerPrintAuth() {
-        return mFingerPrintAuth;
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // Do not create a new Fragment when the Activity is re-created such as orientation changes.
+        setRetainInstance(true);
+        setStyle(DialogFragment.STYLE_NORMAL, android.R.style.Theme_Material_Light_Dialog);
+
+        mKeyguardManager = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
+        mFingerprintUiHelperBuilder = new FingerprintUiHelper.FingerprintUiHelperBuilder(
+            getContext(), getContext().getSystemService(FingerprintManager.class));
+
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+        Bundle savedInstanceState) {
+        Bundle args = getArguments();
+        int dialogMode = args.getInt("dialogMode");
+        String message = args.getString("dialogMessage");
+        Log.d(TAG, "dialogMode: " + dialogMode);
+
+        getDialog().setTitle(getKey("fingerprint_auth_dialog_title"));
+        int fingerprint_dialog_container_id = getResources()
+            .getIdentifier("fingerprint_dialog_container", "layout",
+                FingerprintAuth.packageName);
+        View v = inflater.inflate(fingerprint_dialog_container_id, container, false);
+        int cancel_button_id = getResources()
+            .getIdentifier("cancel_button", "id", FingerprintAuth.packageName);
+
+        TextView description = (TextView) v.findViewById(getResources()
+            .getIdentifier("fingerprint_description", "id", FingerprintAuth.packageName));
+        description.setText(getKey("fingerprint_description"));
+        mCancelButton = (Button) v.findViewById(cancel_button_id);
+        mCancelButton.setText(getKey("cancel"));
+        mCancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                FingerprintAuth.onCancelled();
+                dismissAllowingStateLoss();
+            }
+        });
+
+        int fingerprint_container_id = getResources()
+            .getIdentifier("fingerprint_container", "id", FingerprintAuth.packageName);
+        mFingerprintContent = v.findViewById(fingerprint_container_id);
+
+        int new_fingerprint_enrolled_description_id = getResources()
+            .getIdentifier("new_fingerprint_enrolled_description", "id",
+                FingerprintAuth.packageName);
+
+        int fingerprint_icon_id = getResources()
+            .getIdentifier("fingerprint_icon", "id", FingerprintAuth.packageName);
+        int fingerprint_status_id = getResources()
+            .getIdentifier("fingerprint_status", "id", FingerprintAuth.packageName);
+        mFingerprintUiHelper = mFingerprintUiHelperBuilder.build(
+            (ImageView) v.findViewById(fingerprint_icon_id),
+            (TextView) v.findViewById(fingerprint_status_id), this);
+        updateStage();
+
+        return v;
+    }
+
+    @Override
+    public void onError() {
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mFingerprintUiHelper.stopListening();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (mStage == Stage.FINGERPRINT) {
+            mFingerprintUiHelper.startListening(mCryptoObject);
+        }
+    }
+
+    /**
+     * Sets the crypto object to be passed in when authenticating with fingerprint.
+     */
+    public void setCryptoObject(FingerprintManager.CryptoObject cryptoObject) {
+        mCryptoObject = cryptoObject;
     }
 
     public void setmFingerPrintAuth(FingerprintAuthAux mFingerPrintAuth) {
         this.mFingerPrintAuth = mFingerPrintAuth;
     }
 
+    public void setStage(Stage stage) {
+        mStage = stage;
+    }
+
+    private void showAuthenticationScreen() {
+        // Create the Confirm Credentials screen. You can customize the title and description. Or
+        // we will provide a generic one for you if you leave it null
+        Intent intent = mKeyguardManager.createConfirmDeviceCredentialIntent(null, null);
+        if (intent != null) {
+            startActivityForResult(intent, REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS);
+        }
+    }
+
     /**
-     * Enumeration to indicate which authentication method the user is trying to authenticate with.
+     * Switches to backup (password) screen. This either can happen when fingerprint is not
+     * available or the user chooses to use the password authentication method by pressing the
+     * button. This can also happen when the user had too many fingerprint attempts.
      */
-    public enum Stage {
-        FINGERPRINT,
-        NEW_FINGERPRINT_ENROLLED,
-        BACKUP
+
+    private void updateStage() {
+        switch (mStage) {
+            case FINGERPRINT:
+                mCancelButton.setText(getKey("cancel"));
+                mFingerprintContent.setVisibility(View.VISIBLE);
+                break;
+        }
     }
 }
