@@ -16,7 +16,7 @@
 
 package com.cordova.plugin.android.fingerprintauth;
 
-import org.cyclos.mobile.MainActivity;
+import org.cyclos.mobile.MobilePlugin;
 import org.json.JSONException;
 import org.json.JSONObject;
 import android.annotation.SuppressLint;
@@ -59,12 +59,14 @@ public class FingerprintAuthenticationDialogFragment
 
     private static final int REQUEST_CODE_CONFIRM_DEVICE_CREDENTIALS = 1;
 
+    private static final String DATA_PREFS = "DATA_PREFS";
+
     /**
      * Returns a translated key from shared preference
      */
     public static String getKey(String key) {
         SharedPreferences preferences =
-            MainActivity.get().getSharedPreferences(MobilePlugin.DATA_PREFS, Context.MODE_PRIVATE);
+            MainActivity.get().getSharedPreferences(DATA_PREFS, Context.MODE_PRIVATE);
         String value = preferences.getString("fingerprint_keys", null);
         try {
             JSONObject obj = new JSONObject(value);
