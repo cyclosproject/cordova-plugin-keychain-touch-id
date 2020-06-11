@@ -1,4 +1,4 @@
-package org.cyclos.mobile.plugin;
+package com.cordova.plugin.android.fingerprintauth;
 
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;

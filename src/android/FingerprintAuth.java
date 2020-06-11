@@ -1,4 +1,4 @@
-package org.cyclos.mobile.plugin;
+package com.cordova.plugin.android.fingerprintauth;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;

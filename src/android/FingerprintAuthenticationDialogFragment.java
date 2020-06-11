@@ -14,7 +14,7 @@
  * limitations under the License
  */
 
-package org.cyclos.mobile.plugin;
+package com.cordova.plugin.android.fingerprintauth;
 
 import org.cyclos.mobile.MainActivity;
 import org.json.JSONException;

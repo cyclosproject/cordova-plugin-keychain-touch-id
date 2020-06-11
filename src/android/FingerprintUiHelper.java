@@ -14,7 +14,7 @@
  * limitations under the License
  */
 
-package org.cyclos.mobile.plugin;
+package com.cordova.plugin.android.fingerprintauth;
 
 import android.annotation.TargetApi;
 import android.content.Context;
