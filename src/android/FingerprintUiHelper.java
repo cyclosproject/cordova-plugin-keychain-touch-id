@@ -76,7 +76,7 @@ public class FingerprintUiHelper
                 .getIdentifier("kc_hint_color", "color", FingerprintAuth.packageName);
             mErrorTextView.setTextColor(
                 mErrorTextView.getResources().getColor(hint_color_id, null));
-            mErrorTextView.setText(FingerprintAuthenticationDialogFragment.getKey("fingerprint_hint"));
+            mErrorTextView.setText(FingerprintAuthenticationDialogFragment.getKey(mContext, "fingerprint_hint"));
             int ic_fp_40px_id = mContext.getResources()
                 .getIdentifier("ic_fp_40px", "drawable", FingerprintAuth.packageName);
             mIcon.setImageResource(ic_fp_40px_id);
@@ -116,7 +116,7 @@ public class FingerprintUiHelper
 
     @Override
     public void onAuthenticationFailed() {
-        showError(FingerprintAuthenticationDialogFragment.getKey("fingerprint_not_recognized"));
+        showError(FingerprintAuthenticationDialogFragment.getKey(mContext, "fingerprint_not_recognized"));
     }
 
     @Override
@@ -134,7 +134,7 @@ public class FingerprintUiHelper
             .getIdentifier("kc_success_color", "color", FingerprintAuth.packageName);
         mErrorTextView.setTextColor(
             mErrorTextView.getResources().getColor(success_color_id, null));
-        mErrorTextView.setText(FingerprintAuthenticationDialogFragment.getKey("fingerprint_success"));
+        mErrorTextView.setText(FingerprintAuthenticationDialogFragment.getKey(mContext, "fingerprint_success"));
         mIcon.postDelayed(new Runnable() {
             @Override
             public void run() {

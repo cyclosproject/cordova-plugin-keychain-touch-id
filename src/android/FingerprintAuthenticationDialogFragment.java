@@ -16,7 +16,6 @@
 
 package com.cordova.plugin.android.fingerprintauth;
 
-import org.cyclos.mobile.MobilePlugin;
 import org.json.JSONException;
 import org.json.JSONObject;
 import android.annotation.SuppressLint;
@@ -64,9 +63,8 @@ public class FingerprintAuthenticationDialogFragment
     /**
      * Returns a translated key from shared preference
      */
-    public static String getKey(String key) {
-        SharedPreferences preferences =
-            MainActivity.get().getSharedPreferences(DATA_PREFS, Context.MODE_PRIVATE);
+    public static String getKey(Context context, String key) {
+        SharedPreferences preferences = context.getSharedPreferences(DATA_PREFS, Context.MODE_PRIVATE);
         String value = preferences.getString("fingerprint_keys", null);
         try {
             JSONObject obj = new JSONObject(value);
@@ -147,7 +145,7 @@ public class FingerprintAuthenticationDialogFragment
         String message = args.getString("dialogMessage");
         Log.d(TAG, "dialogMode: " + dialogMode);
 
-        getDialog().setTitle(getKey("fingerprint_auth_dialog_title"));
+        getDialog().setTitle(getKey(getContext(), "fingerprint_auth_dialog_title"));
         int fingerprint_dialog_container_id = getResources()
             .getIdentifier("fingerprint_dialog_container", "layout",
                 FingerprintAuth.packageName);
@@ -157,9 +155,9 @@ public class FingerprintAuthenticationDialogFragment
 
         TextView description = (TextView) v.findViewById(getResources()
             .getIdentifier("fingerprint_description", "id", FingerprintAuth.packageName));
-        description.setText(getKey("fingerprint_description"));
+        description.setText(getKey(getContext(), "fingerprint_description"));
         mCancelButton = (Button) v.findViewById(cancel_button_id);
-        mCancelButton.setText(getKey("cancel"));
+        mCancelButton.setText(getKey(getContext(), "cancel"));
         mCancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -240,7 +238,7 @@ public class FingerprintAuthenticationDialogFragment
     private void updateStage() {
         switch (mStage) {
             case FINGERPRINT:
-                mCancelButton.setText(getKey("cancel"));
+                mCancelButton.setText(getKey(getContext(), "cancel"));
                 mFingerprintContent.setVisibility(View.VISIBLE);
                 break;
         }
