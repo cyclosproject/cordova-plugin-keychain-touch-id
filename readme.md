@@ -1,5 +1,5 @@
 
-#The 3.3.0 was never released in the original repo, we patched the master branch because it fixes other bugs (used for iOS and Android)
+# The 3.3.0 was never released in the original repo, we patched the master branch because it fixes other bugs (used for iOS and Android)
 # cordova-plugin-keychain-touch-id 
 
 
