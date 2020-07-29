@@ -14,7 +14,7 @@ var touchid = {
 	has: function(key,successCallback, errorCallback){
 		exec(successCallback, errorCallback, "TouchID", "has", [key]);
 	},
-	delete: function(key,successCallback, errorCallback){
+	remove: function(key,successCallback, errorCallback){
 		exec(successCallback, errorCallback, "TouchID", "delete", [key]);
 	},
 	setLocale: function(locale,successCallback, errorCallback){
